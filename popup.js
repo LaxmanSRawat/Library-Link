@@ -1,7 +1,10 @@
 // Popup script for Library Link extension
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Load and display total savings
+    // Initialize persona
+    await initializePersona();
+
+    // Load and display total savings (student only)
     loadSavings();
 
     // Load current book information
@@ -9,6 +12,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Setup init default requests button
     document.getElementById('initDefaultRequests').addEventListener('click', initializeDefaultRequests);
+
+    // Setup persona toggle
+    document.getElementById('personaToggle').addEventListener('change', handlePersonaToggle);
+
+    // Setup course selector
+    document.getElementById('courseSelect').addEventListener('change', loadCourseReserves);
 });
 
 // Load total savings
@@ -146,13 +155,35 @@ function showAvailableBook(bookInfo, libraryData) {
                     // Update savings display
                     document.getElementById('totalSavings').textContent = `$${response.totalSavings.toFixed(2)} `;
 
-                    // Animate savings
                     const savingsAmount = document.getElementById('totalSavings');
                     savingsAmount.classList.add('pulse');
                     setTimeout(() => savingsAmount.classList.remove('pulse'), 600);
                 }
             }
         );
+    };
+
+    // Setup map button
+    const mapBtn = document.getElementById('mapBtn');
+    const modal = document.getElementById('floorPlanModal');
+    const modalImg = document.getElementById('floorPlanImg');
+    const modalLocation = document.getElementById('modalLocation');
+    const closeModal = document.querySelector('.close-modal');
+
+    mapBtn.onclick = () => {
+        modal.style.display = 'block';
+        modalImg.src = 'icons/Gemini_Generated_Image_xw5kwfxw5kwfxw5k.png';
+        modalLocation.textContent = `Location: ${bookInfo.location}`;
+    };
+
+    closeModal.onclick = () => {
+        modal.style.display = 'none';
+    };
+
+    window.onclick = (event) => {
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
     };
 }
 
@@ -280,4 +311,193 @@ function initializeDefaultRequests() {
             btn.style.background = '';
         }, 2000);
     });
+}
+
+// ===== PERSONA MANAGEMENT =====
+
+// Initialize persona on load
+async function initializePersona() {
+    return new Promise((resolve) => {
+        chrome.runtime.sendMessage({ action: 'getCurrentPersona' }, (response) => {
+            const persona = response?.persona || 'student';
+            const toggle = document.getElementById('personaToggle');
+
+            if (persona === 'professor') {
+                toggle.checked = true;
+                showProfessorView();
+                loadCourseReserves();
+            } else {
+                toggle.checked = false;
+                showStudentView();
+            }
+
+            console.log('Popup: Initialized persona:', persona);
+            resolve();
+        });
+    });
+}
+
+// Handle persona toggle
+function handlePersonaToggle(event) {
+    const isProfessor = event.target.checked;
+    const newPersona = isProfessor ? 'professor' : 'student';
+
+    chrome.runtime.sendMessage(
+        { action: 'switchPersona', persona: newPersona },
+        (response) => {
+            if (response && response.success) {
+                console.log('Popup: Switched to', newPersona);
+
+                if (isProfessor) {
+                    showProfessorView();
+                    loadCourseReserves();
+                } else {
+                    showStudentView();
+                }
+            }
+        }
+    );
+}
+
+// Show student view
+function showStudentView() {
+    document.querySelectorAll('.student-only').forEach(el => {
+        // Check if it's the savings section (has flex display)
+        if (el.classList.contains('savings-section')) {
+            el.style.display = 'flex';
+        } else {
+            el.style.display = 'block';
+        }
+    });
+    document.querySelectorAll('.professor-only').forEach(el => {
+        el.style.display = 'none';
+    });
+}
+
+// Show professor view
+function showProfessorView() {
+    document.querySelectorAll('.student-only').forEach(el => {
+        el.style.display = 'none';
+    });
+    document.querySelectorAll('.professor-only').forEach(el => {
+        // Check if it's the course reserves section
+        if (el.classList.contains('course-reserves-section')) {
+            el.style.display = 'block';
+        } else {
+            el.style.display = 'block';
+        }
+    });
+}
+
+// ===== COURSE RESERVE MANAGEMENT =====
+
+// Load course reserves
+function loadCourseReserves() {
+    const courseSelect = document.getElementById('courseSelect');
+    const selectedCourse = courseSelect.value;
+
+    chrome.runtime.sendMessage(
+        {
+            action: 'getCourseReserves',
+            courseCode: selectedCourse || undefined
+        },
+        (response) => {
+            if (response && response.reserves) {
+                displayCourseReserves(response.reserves, selectedCourse);
+            }
+        }
+    );
+}
+
+// Display course reserves
+function displayCourseReserves(reserves, selectedCourse) {
+    const reservesList = document.getElementById('courseReservesList');
+
+    if (!selectedCourse) {
+        // Show all courses
+        const allReserves = [];
+        for (const [courseCode, books] of Object.entries(reserves)) {
+            books.forEach(book => {
+                allReserves.push({ ...book, courseCode });
+            });
+        }
+
+        if (allReserves.length === 0) {
+            reservesList.innerHTML = `
+        <div class="empty-reserves">
+          <div class="empty-reserves-icon">📚</div>
+          <div class="empty-reserves-text">No books in course reserves yet.<br>Visit Amazon to add books!</div>
+        </div>
+      `;
+            return;
+        }
+
+        reservesList.innerHTML = allReserves.map(item => createReserveItemHTML(item, item.courseCode)).join('');
+    } else {
+        // Show specific course
+        if (!reserves || reserves.length === 0) {
+            reservesList.innerHTML = `
+        <div class="empty-reserves">
+          <div class="empty-reserves-icon">📚</div>
+          <div class="empty-reserves-text">No books in this course reserve yet.<br>Visit Amazon to add books!</div>
+        </div>
+      `;
+            return;
+        }
+
+        reservesList.innerHTML = reserves.map(item => createReserveItemHTML(item, selectedCourse)).join('');
+    }
+
+    // Add event listeners to remove buttons
+    document.querySelectorAll('.reserve-remove-btn').forEach(btn => {
+        btn.addEventListener('click', handleRemoveFromReserve);
+    });
+}
+
+// Create HTML for a reserve item
+function createReserveItemHTML(item, courseCode) {
+    const addedDate = new Date(item.addedDate).toLocaleDateString();
+
+    return `
+    <div class="reserve-item" data-isbn="${item.book.isbn}" data-course="${courseCode}">
+      <div class="reserve-book-title">${item.book.title}</div>
+      <div class="reserve-book-author">${item.book.author || 'Unknown Author'}</div>
+      <div class="reserve-details">
+        <span>Course: ${courseCode}</span>
+        <span>Class Size: ${item.classSize}</span>
+      </div>
+      <div class="reserve-details">
+        <span>Added: ${addedDate}</span>
+        <span>By: ${item.addedBy}</span>
+      </div>
+      <button class="reserve-remove-btn">Remove from Course</button>
+    </div>
+  `;
+}
+
+// Handle remove from reserve
+function handleRemoveFromReserve(event) {
+    const reserveItem = event.target.closest('.reserve-item');
+    const isbn = reserveItem.dataset.isbn;
+    const courseCode = reserveItem.dataset.course;
+
+    if (!confirm(`Remove this book from ${courseCode}?`)) {
+        return;
+    }
+
+    chrome.runtime.sendMessage(
+        {
+            action: 'removeFromCourseReserve',
+            courseCode: courseCode,
+            isbn: isbn
+        },
+        (response) => {
+            if (response && response.success) {
+                console.log('Popup: Removed book from course reserve');
+                loadCourseReserves(); // Reload the list
+            } else {
+                alert('Failed to remove book: ' + (response?.message || 'Unknown error'));
+            }
+        }
+    );
 }

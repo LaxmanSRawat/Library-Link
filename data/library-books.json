@@ -5,7 +5,7 @@
             "title": "Introduction to Algorithms",
             "author": "Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, Clifford Stein",
             "copiesAvailable": 4,
-            "location": "Engineering Library - 2nd Floor, Section QA76.6",
+            "location": "Dibner Library - 4th Floor, Section QA76.6",
             "price": 89.99
         },
         {
@@ -119,6 +119,14 @@
             "copiesAvailable": 2,
             "location": "Engineering Library - 4th Floor, Section Q325.5",
             "price": 97.00
+        },
+        {
+            "isbn": "978-0-13-449416-6",
+            "title": "Clean Architecture: A Craftsman's Guide to Software Structure and Design",
+            "author": "Robert C. Martin",
+            "copiesAvailable": 2,
+            "location": "Engineering Library - 2nd Floor, Section QA76.76",
+            "price": 35.00
         }
     ]
 }

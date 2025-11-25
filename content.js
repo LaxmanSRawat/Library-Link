@@ -3,6 +3,15 @@ console.log('Library Link: Content script loaded!');
 
 let currentBookInfo = null;
 let notificationShown = false;
+let currentPersona = 'student'; // Will be updated from storage
+
+// Detect persona on load
+chrome.runtime.sendMessage({ action: 'getCurrentPersona' }, (response) => {
+    if (response && response.persona) {
+        currentPersona = response.persona;
+        console.log('Library Link: Current persona:', currentPersona);
+    }
+});
 
 // Detect if we're on a book product page
 function isBookPage() {
@@ -102,6 +111,7 @@ function extractBookInfo() {
 }
 
 // Show notification banner
+// Show notification banner
 function showNotification(bookData) {
     if (notificationShown) return;
 
@@ -126,47 +136,21 @@ function showNotification(bookData) {
 
     const notification = document.createElement('div');
     notification.id = 'library-link-notification';
-    notification.className = 'library-link-banner';
+    notification.className = `library-link-banner ${currentPersona === 'professor' ? 'professor-banner' : ''}`;
 
-    const message = bookData
-        ? `📚 Great news! "${currentBookInfo.title}" is available at NYU Library!`
-        : `📚 "${currentBookInfo.title}" is not in our library. Request it now!`;
+    let message, expandedContent;
 
-    // Create expanded content for available books
-    const expandedContent = bookData ? `
-    <div class="library-link-expanded" style="display: none;">
-      <div class="library-link-details">
-        <h3>${bookData.title}</h3>
-        <p class="author">by ${bookData.author}</p>
-        <div class="details-grid">
-          <div class="detail-item">
-            <span class="label">Copies Available:</span>
-            <span class="value">${bookData.copiesAvailable}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">Location:</span>
-            <span class="value">${bookData.location}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">You'll Save:</span>
-            <span class="value price">$${bookData.price.toFixed(2)}</span>
-          </div>
-        </div>
-        <button class="library-link-borrow-btn">📖 Borrow and Pickup</button>
-      </div>
-    </div>
-  ` : `
-    <div class="library-link-expanded" style="display: none;">
-      <div class="library-link-details">
-        <h3>${currentBookInfo.title}</h3>
-        <p class="author">${currentBookInfo.author ? 'by ' + currentBookInfo.author : ''}</p>
-        <div class="request-info">
-          <p>This book is not currently in our library. Request it to help us prioritize acquisitions!</p>
-          <button class="library-link-request-btn">➕ Add Request</button>
-        </div>
-      </div>
-    </div>
-  `;
+    if (currentPersona === 'professor') {
+        message = bookData
+            ? `📚 "${currentBookInfo.title}" is available in the library.`
+            : `📚 "${currentBookInfo.title}" is not in our library.`;
+        expandedContent = createProfessorExpandedContent(bookData);
+    } else {
+        message = bookData
+            ? `📚 Great news! "${currentBookInfo.title}" is available at NYU Library!`
+            : `📚 "${currentBookInfo.title}" is not in our library. Request it now!`;
+        expandedContent = createStudentExpandedContent(bookData);
+    }
 
     notification.innerHTML = `
     <div class="library-link-content">
@@ -198,82 +182,167 @@ function showNotification(bookData) {
         }
     });
 
-    // Add borrow button handler if book is available
-    if (bookData) {
-        const borrowBtn = notification.querySelector('.library-link-borrow-btn');
-
-        // Check if already borrowed
-        chrome.storage.local.get(['borrowedBooks'], (result) => {
-            const borrowedBooks = result.borrowedBooks || [];
-            const alreadyBorrowed = borrowedBooks.some(b => b.isbn === bookData.isbn);
-
-            if (alreadyBorrowed) {
-                borrowBtn.textContent = '✓ Already Borrowed';
-                borrowBtn.disabled = true;
-                borrowBtn.style.background = '#cbd5e0';
-                borrowBtn.style.cursor = 'not-allowed';
-                console.log('Library Link: Book already borrowed');
-            } else {
-                // Add click handler for borrowing
-                borrowBtn.addEventListener('click', (e) => {
+    // Add persona-specific event handlers
+    if (currentPersona === 'professor') {
+        // Professor actions
+        if (bookData) {
+            // Add to course reserve button
+            const addReserveBtn = notification.querySelector('.library-link-add-reserve-btn');
+            if (addReserveBtn) {
+                addReserveBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    console.log('Library Link: Borrow button clicked');
+                    const courseSelect = notification.querySelector('#courseSelect');
+                    const classSizeInput = notification.querySelector('#classSize');
+
+                    const courseCode = courseSelect.value;
+                    const classSize = parseInt(classSizeInput.value);
+
+                    if (!courseCode) {
+                        alert('Please select a course');
+                        return;
+                    }
+
+                    if (!classSize || classSize < 1) {
+                        alert('Please enter a valid class size');
+                        return;
+                    }
 
                     chrome.runtime.sendMessage(
-                        { action: 'borrowBook', book: bookData },
+                        {
+                            action: 'addToCourseReserve',
+                            courseCode: courseCode,
+                            book: bookData,
+                            classSize: classSize
+                        },
                         (response) => {
                             if (response && response.success) {
-                                borrowBtn.textContent = '✓ Added to Borrowed Books!';
-                                borrowBtn.disabled = true;
-                                borrowBtn.style.background = '#48bb78';
-                                console.log('Library Link: Book borrowed successfully');
+                                addReserveBtn.textContent = '✓ Added to Course Reserve!';
+                                addReserveBtn.disabled = true;
+                                addReserveBtn.style.background = '#48bb78';
+                            } else {
+                                alert('Failed to add: ' + (response?.message || 'Unknown error'));
                             }
                         }
                     );
                 });
             }
-        });
-    } else {
-        // Add request button handler for unavailable books
-        const requestBtn = notification.querySelector('.library-link-request-btn');
-        const isbn = currentBookInfo.isbn || currentBookInfo.title;
+        } else {
+            // Request for course button
+            const requestCourseBtn = notification.querySelector('.library-link-request-course-btn');
+            if (requestCourseBtn) {
+                requestCourseBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const courseSelect = notification.querySelector('#courseSelect');
+                    const classSizeInput = notification.querySelector('#classSize');
 
-        // Check if user already requested this book
-        chrome.runtime.sendMessage(
-            { action: 'checkUserRequest', isbn: isbn, title: currentBookInfo.title },
-            (response) => {
-                if (response && response.hasRequested) {
-                    requestBtn.textContent = '✓ You Already Requested This';
-                    requestBtn.disabled = true;
-                    requestBtn.style.background = '#cbd5e0';
-                    requestBtn.style.cursor = 'not-allowed';
-                    console.log('Library Link: User already requested this book');
-                } else {
-                    // Add click handler for requesting
-                    requestBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        console.log('Library Link: Request button clicked');
+                    const courseCode = courseSelect.value;
+                    const classSize = parseInt(classSizeInput.value);
 
-                        chrome.runtime.sendMessage(
-                            { action: 'addRequest', book: currentBookInfo },
-                            (response) => {
-                                if (response && response.success) {
-                                    requestBtn.textContent = `✓ Request Added! (${response.requestCount} total)`;
-                                    requestBtn.disabled = true;
-                                    requestBtn.style.background = '#48bb78';
-                                    console.log('Library Link: Request added successfully');
-                                } else if (response && !response.success) {
-                                    requestBtn.textContent = '✓ You Already Requested This';
-                                    requestBtn.disabled = true;
-                                    requestBtn.style.background = '#cbd5e0';
-                                    console.log('Library Link: User already requested');
-                                }
+                    if (!courseCode) {
+                        alert('Please select a course');
+                        return;
+                    }
+
+                    if (!classSize || classSize < 1) {
+                        alert('Please enter a valid class size');
+                        return;
+                    }
+
+                    chrome.runtime.sendMessage(
+                        {
+                            action: 'requestBookForCourse',
+                            book: currentBookInfo,
+                            courseCode: courseCode,
+                            classSize: classSize
+                        },
+                        (response) => {
+                            if (response && response.success) {
+                                requestCourseBtn.textContent = `✓ Requested! (${response.requestCount} total)`;
+                                requestCourseBtn.disabled = true;
+                                requestCourseBtn.style.background = '#48bb78';
+                            } else {
+                                alert('Failed to request: ' + (response?.message || 'Unknown error'));
                             }
-                        );
+                        }
+                    );
+                });
+            }
+        }
+    } else {
+        // Student actions
+        if (bookData) {
+            const borrowBtn = notification.querySelector('.library-link-borrow-btn');
+            if (borrowBtn) {
+                chrome.storage.local.get(['borrowedBooks'], (result) => {
+                    const borrowedBooks = result.borrowedBooks || [];
+                    const alreadyBorrowed = borrowedBooks.some(b => b.isbn === bookData.isbn);
+
+                    if (alreadyBorrowed) {
+                        borrowBtn.textContent = '✓ Already Borrowed';
+                        borrowBtn.disabled = true;
+                        borrowBtn.style.background = '#cbd5e0';
+                        borrowBtn.style.cursor = 'not-allowed';
+                    } else {
+                        borrowBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            chrome.runtime.sendMessage(
+                                { action: 'borrowBook', book: bookData },
+                                (response) => {
+                                    if (response && response.success) {
+                                        borrowBtn.textContent = '✓ Added to Borrowed Books!';
+                                        borrowBtn.disabled = true;
+                                        borrowBtn.style.background = '#48bb78';
+                                    }
+                                }
+                            );
+                        });
+                    }
+                });
+
+                // Add map button handler
+                const mapBtn = notification.querySelector('.library-link-map-btn');
+                if (mapBtn) {
+                    mapBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        showFloorPlanModal(bookData);
                     });
                 }
             }
-        );
+        } else {
+            const requestBtn = notification.querySelector('.library-link-request-btn');
+            if (requestBtn) {
+                const isbn = currentBookInfo.isbn || currentBookInfo.title;
+                chrome.runtime.sendMessage(
+                    { action: 'checkUserRequest', isbn: isbn, title: currentBookInfo.title },
+                    (response) => {
+                        if (response && response.hasRequested) {
+                            requestBtn.textContent = '✓ You Already Requested This';
+                            requestBtn.disabled = true;
+                            requestBtn.style.background = '#cbd5e0';
+                            requestBtn.style.cursor = 'not-allowed';
+                        } else {
+                            requestBtn.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                chrome.runtime.sendMessage(
+                                    { action: 'addRequest', book: currentBookInfo },
+                                    (response) => {
+                                        if (response && response.success) {
+                                            requestBtn.textContent = `✓ Request Added! (${response.requestCount} total)`;
+                                            requestBtn.disabled = true;
+                                            requestBtn.style.background = '#48bb78';
+                                        } else if (response && !response.success) {
+                                            requestBtn.textContent = '✓ You Already Requested This';
+                                            requestBtn.disabled = true;
+                                            requestBtn.style.background = '#cbd5e0';
+                                        }
+                                    }
+                                );
+                            });
+                        }
+                    }
+                );
+            }
+        }
     }
 
     // Add close button handler
@@ -294,8 +363,173 @@ function showNotification(bookData) {
     console.log('Library Link: Notification shown');
 }
 
+// Helper functions for persona-specific content
+function createStudentExpandedContent(bookData) {
+    if (bookData) {
+        return `
+      <div class="library-link-expanded" style="display: none;">
+        <div class="library-link-details">
+          <h3>${bookData.title}</h3>
+          <p class="author">by ${bookData.author}</p>
+          <div class="details-grid">
+            <div class="detail-item">
+              <span class="label">Copies Available:</span>
+              <span class="value">${bookData.copiesAvailable}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Location:</span>
+              <span class="value">${bookData.location}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">You'll Save:</span>
+              <span class="value price">$${bookData.price.toFixed(2)}</span>
+            </div>
+          </div>
+          <div class="button-group">
+            <button class="library-link-borrow-btn">📖 Borrow and Pickup</button>
+            <button class="library-link-map-btn">📍 Show Me Where</button>
+          </div>
+        </div>
+      </div>
+    `;
+    } else {
+        return `
+      <div class="library-link-expanded" style="display: none;">
+        <div class="library-link-details">
+          <h3>${currentBookInfo.title}</h3>
+          <p class="author">${currentBookInfo.author ? 'by ' + currentBookInfo.author : ''}</p>
+          <div class="request-info">
+            <p>This book is not currently in our library. Request it to help us prioritize acquisitions!</p>
+            <button class="library-link-request-btn">➕ Add Request</button>
+            <p class="ez-borrow-note">
+              You can also use <a href="https://ezborrow.reshare.indexdata.com/" target="_blank">EZBorrow</a> or <a href="https://library.nyu.edu/services/borrowing/from-non-nyu-libraries/interlibrary-loan/" target="_blank">InterLibrary Loan (ILL)</a> for materials unavailable at NYU
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+}
+
+function createProfessorExpandedContent(bookData) {
+    if (bookData) {
+        return `
+      <div class="library-link-expanded" style="display: none;">
+        <div class="library-link-details">
+          <h3>${bookData.title}</h3>
+          <p class="author">by ${bookData.author}</p>
+          <div class="details-grid">
+            <div class="detail-item">
+              <span class="label">Copies Available:</span>
+              <span class="value">${bookData.copiesAvailable}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Location:</span>
+              <span class="value">${bookData.location}</span>
+            </div>
+          </div>
+          
+          <div class="professor-actions">
+            <div class="course-select-group">
+              <label for="courseSelect">Select Course:</label>
+              <select id="courseSelect" class="course-select">
+                <option value="">Choose a course...</option>
+                <option value="CS101">CS101 - Intro to Computer Science</option>
+                <option value="CS201">CS201 - Data Structures</option>
+                <option value="CS301">CS301 - Software Engineering</option>
+              </select>
+            </div>
+            
+            <div class="class-size-group">
+              <label for="classSize">Expected Class Size:</label>
+              <input type="number" id="classSize" class="class-size-input" 
+                     placeholder="e.g., 30" min="1" max="500">
+            </div>
+            
+            <button class="library-link-add-reserve-btn">📚 Add to Course Reserve</button>
+          </div>
+        </div>
+      </div>
+    `;
+    } else {
+        return `
+      <div class="library-link-expanded" style="display: none;">
+        <div class="library-link-details">
+          <h3>${currentBookInfo.title}</h3>
+          <p class="author">${currentBookInfo.author ? 'by ' + currentBookInfo.author : ''}</p>
+          <div class="request-info">
+            <p>This book is not in our library. Request it for your course to help us prioritize acquisitions!</p>
+          </div>
+          
+          <div class="professor-actions">
+            <div class="course-select-group">
+              <label for="courseSelect">Select Course:</label>
+              <select id="courseSelect" class="course-select">
+                <option value="">Choose a course...</option>
+                <option value="CS101">CS101 - Intro to Computer Science</option>
+                <option value="CS201">CS201 - Data Structures</option>
+                <option value="CS301">CS301 - Software Engineering</option>
+              </select>
+            </div>
+            
+            <div class="class-size-group">
+              <label for="classSize">Expected Class Size:</label>
+              <input type="number" id="classSize" class="class-size-input" 
+                     placeholder="e.g., 30" min="1" max="500">
+            </div>
+            
+            <button class="library-link-request-course-btn">➕ Request for Course</button>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+}
+
+// Show floor plan modal
+function showFloorPlanModal(bookData) {
+    const existingModal = document.getElementById('library-link-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    const modal = document.createElement('div');
+    modal.id = 'library-link-modal';
+    modal.className = 'library-link-modal';
+
+    const imageUrl = chrome.runtime.getURL('icons/Gemini_Generated_Image_xw5kwfxw5kwfxw5k.png');
+
+    modal.innerHTML = `
+        <div class="library-link-modal-content">
+            <button class="library-link-modal-close">&times;</button>
+            <h3>Library Floor Plan</h3>
+            <p>Location: ${bookData.location}</p>
+            <div class="library-link-floor-plan">
+                <img src="${imageUrl}" alt="Library Floor Plan">
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Add event listeners
+    const closeBtn = modal.querySelector('.library-link-modal-close');
+    closeBtn.addEventListener('click', () => {
+        modal.remove();
+    });
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+
+    // Animate in
+    setTimeout(() => modal.classList.add('visible'), 10);
+}
 // Check if book is in library
 function checkLibrary(bookInfo) {
+
     console.log('Library Link: Checking library for book...');
 
     chrome.runtime.sendMessage(

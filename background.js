@@ -2,7 +2,7 @@
 
 // Initialize storage on installation
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.local.get(['borrowedBooks', 'bookRequests', 'totalSavings'], (result) => {
+  chrome.storage.local.get(['borrowedBooks', 'bookRequests', 'totalSavings', 'currentPersona', 'courseReserves'], (result) => {
     if (!result.borrowedBooks) {
       chrome.storage.local.set({ borrowedBooks: [] });
     }
@@ -44,6 +44,12 @@ chrome.runtime.onInstalled.addListener(() => {
     }
     if (!result.totalSavings) {
       chrome.storage.local.set({ totalSavings: 0 });
+    }
+    if (!result.currentPersona) {
+      chrome.storage.local.set({ currentPersona: 'student' }); // Default to student
+    }
+    if (!result.courseReserves) {
+      chrome.storage.local.set({ courseReserves: {} }); // Empty course reserves
     }
   });
 });
@@ -228,6 +234,227 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Get total savings
     chrome.storage.local.get(['totalSavings'], (result) => {
       sendResponse({ totalSavings: result.totalSavings || 0 });
+    });
+    return true;
+  }
+
+  // ===== PERSONA MANAGEMENT =====
+
+  if (request.action === 'switchPersona') {
+    // Switch between student and professor personas
+    const newPersona = request.persona; // 'student' or 'professor'
+    chrome.storage.local.set({ currentPersona: newPersona }, () => {
+      console.log('Background: Switched persona to', newPersona);
+      sendResponse({ success: true, persona: newPersona });
+    });
+    return true;
+  }
+
+  if (request.action === 'getCurrentPersona') {
+    // Get current persona
+    chrome.storage.local.get(['currentPersona'], (result) => {
+      sendResponse({ persona: result.currentPersona || 'student' });
+    });
+    return true;
+  }
+
+  // ===== COURSE RESERVE MANAGEMENT =====
+
+  if (request.action === 'addToCourseReserve') {
+    // Add book to a course reserve
+    chrome.storage.local.get(['courseReserves'], (result) => {
+      const courseReserves = result.courseReserves || {};
+      const { courseCode, book, classSize } = request;
+
+      // Initialize course array if it doesn't exist
+      if (!courseReserves[courseCode]) {
+        courseReserves[courseCode] = [];
+      }
+
+      // Check if book already in this course
+      const normalizedIsbn = book.isbn.replace(/-/g, '');
+      const alreadyInCourse = courseReserves[courseCode].some(item =>
+        item.book.isbn.replace(/-/g, '') === normalizedIsbn
+      );
+
+      if (alreadyInCourse) {
+        sendResponse({
+          success: false,
+          message: 'Book already in this course reserve'
+        });
+        return;
+      }
+
+      // Add book to course reserve
+      courseReserves[courseCode].push({
+        book: book,
+        classSize: classSize,
+        addedDate: new Date().toISOString(),
+        addedBy: 'Dr. Sarah Johnson' // From persona data
+      });
+
+      chrome.storage.local.set({ courseReserves: courseReserves }, () => {
+        console.log('Background: Added book to course reserve', courseCode);
+        sendResponse({ success: true, courseCode: courseCode });
+      });
+    });
+    return true;
+  }
+
+  if (request.action === 'removeFromCourseReserve') {
+    // Remove book from a course reserve
+    chrome.storage.local.get(['courseReserves'], (result) => {
+      const courseReserves = result.courseReserves || {};
+      const { courseCode, isbn } = request;
+
+      if (!courseReserves[courseCode]) {
+        sendResponse({ success: false, message: 'Course not found' });
+        return;
+      }
+
+      // Normalize ISBN for comparison
+      const normalizedIsbn = isbn.replace(/-/g, '');
+
+      // Filter out the book
+      const originalLength = courseReserves[courseCode].length;
+      courseReserves[courseCode] = courseReserves[courseCode].filter(item =>
+        item.book.isbn.replace(/-/g, '') !== normalizedIsbn
+      );
+
+      if (courseReserves[courseCode].length === originalLength) {
+        sendResponse({ success: false, message: 'Book not found in course' });
+        return;
+      }
+
+      chrome.storage.local.set({ courseReserves: courseReserves }, () => {
+        console.log('Background: Removed book from course reserve', courseCode);
+        sendResponse({ success: true });
+      });
+    });
+    return true;
+  }
+
+  if (request.action === 'getCourseReserves') {
+    // Get course reserves (all courses or specific course)
+    chrome.storage.local.get(['courseReserves'], (result) => {
+      const courseReserves = result.courseReserves || {};
+
+      if (request.courseCode) {
+        // Get specific course
+        sendResponse({
+          reserves: courseReserves[request.courseCode] || []
+        });
+      } else {
+        // Get all courses
+        sendResponse({ reserves: courseReserves });
+      }
+    });
+    return true;
+  }
+
+  if (request.action === 'checkBookInCourseReserves') {
+    // Check if a book is in any course reserves
+    chrome.storage.local.get(['courseReserves'], (result) => {
+      const courseReserves = result.courseReserves || {};
+      const isbn = request.isbn;
+      const normalizedIsbn = isbn.replace(/-/g, '');
+
+      const coursesWithBook = [];
+
+      for (const [courseCode, books] of Object.entries(courseReserves)) {
+        const bookInCourse = books.find(item =>
+          item.book.isbn.replace(/-/g, '') === normalizedIsbn
+        );
+
+        if (bookInCourse) {
+          coursesWithBook.push({
+            courseCode: courseCode,
+            classSize: bookInCourse.classSize,
+            addedDate: bookInCourse.addedDate
+          });
+        }
+      }
+
+      sendResponse({
+        inCourseReserve: coursesWithBook.length > 0,
+        courses: coursesWithBook
+      });
+    });
+    return true;
+  }
+
+  if (request.action === 'requestBookForCourse') {
+    // Request an unavailable book for a course
+    chrome.storage.local.get(['bookRequests'], (result) => {
+      const bookRequests = result.bookRequests || {};
+      const { book, courseCode, classSize } = request;
+      const isbn = book.isbn || book.title;
+
+      // Normalize ISBN
+      const normalizedIsbn = isbn.replace(/-/g, '');
+
+      // Find existing request entry
+      let existingKey = null;
+      for (const storedIsbn of Object.keys(bookRequests)) {
+        if (storedIsbn.replace(/-/g, '') === normalizedIsbn) {
+          existingKey = storedIsbn;
+          break;
+        }
+      }
+
+      if (existingKey) {
+        // Add course request to existing entry
+        if (!bookRequests[existingKey].courseRequests) {
+          bookRequests[existingKey].courseRequests = [];
+        }
+
+        // Check if already requested for this course
+        const alreadyRequested = bookRequests[existingKey].courseRequests.some(
+          req => req.courseCode === courseCode
+        );
+
+        if (alreadyRequested) {
+          sendResponse({
+            success: false,
+            message: 'Already requested for this course'
+          });
+          return;
+        }
+
+        bookRequests[existingKey].courseRequests.push({
+          courseCode: courseCode,
+          classSize: classSize,
+          requestedDate: new Date().toISOString(),
+          requestedBy: 'Dr. Sarah Johnson'
+        });
+
+        // Increment total count
+        bookRequests[existingKey].requestCount += 1;
+      } else {
+        // Create new request entry
+        bookRequests[isbn] = {
+          book: book,
+          requestCount: 1,
+          requestedDate: new Date().toISOString(),
+          courseRequests: [{
+            courseCode: courseCode,
+            classSize: classSize,
+            requestedDate: new Date().toISOString(),
+            requestedBy: 'Dr. Sarah Johnson'
+          }]
+        };
+      }
+
+      const finalKey = existingKey || isbn;
+      const finalCount = bookRequests[finalKey].requestCount;
+
+      chrome.storage.local.set({ bookRequests: bookRequests }, () => {
+        console.log('Background: Requested book for course', courseCode);
+        sendResponse({
+          success: true,
+          requestCount: finalCount
+        });
+      });
     });
     return true;
   }

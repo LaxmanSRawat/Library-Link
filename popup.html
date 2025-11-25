@@ -10,8 +10,20 @@
 
 <body>
   <div class="container">
-    <!-- Savings Display -->
-    <div class="savings-section" style="position: relative;">
+    <!-- Persona Toggle -->
+    <div class="persona-toggle-section">
+      <div class="persona-label">I am a:</div>
+      <div class="toggle-switch">
+        <input type="checkbox" id="personaToggle" class="toggle-input">
+        <label for="personaToggle" class="toggle-label">
+          <span class="toggle-text student-text">Student</span>
+          <span class="toggle-text professor-text">Professor</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Savings Display (Student Only) -->
+    <div class="savings-section student-only" style="position: relative;">
       <div class="savings-icon">💰</div>
       <div class="savings-content">
         <div class="savings-label">Total Savings</div>
@@ -21,6 +33,31 @@
         title="Initialize default pending requests for testing">
         🔧 Init Requests
       </button>
+    </div>
+
+    <!-- Course Reserves Section (Professor Only) -->
+    <div class="course-reserves-section professor-only" style="display: none;">
+      <div class="course-header">
+        <div class="course-icon">📚</div>
+        <div class="course-title">
+          <div class="course-label">Course Reserves</div>
+          <div class="course-subtitle">Manage your course reading lists</div>
+        </div>
+      </div>
+
+      <div class="course-selector">
+        <label for="courseSelect">Select Course:</label>
+        <select id="courseSelect" class="course-dropdown">
+          <option value="">All Courses</option>
+          <option value="CS101">CS101 - Intro to Computer Science</option>
+          <option value="CS201">CS201 - Data Structures</option>
+          <option value="CS301">CS301 - Software Engineering</option>
+        </select>
+      </div>
+
+      <div id="courseReservesList" class="reserves-list">
+        <!-- Will be populated by JavaScript -->
+      </div>
     </div>
 
     <!-- Book Details Section -->
@@ -67,6 +104,11 @@
           Borrow and Pickup
         </button>
 
+        <button id="mapBtn" class="btn btn-map">
+          <span class="btn-icon">📍</span>
+          Show Me Where
+        </button>
+
         <div id="borrowSuccess" class="success-message" style="display: none;">
           ✓ Added to your borrowed books!
         </div>
@@ -99,12 +141,30 @@
         <div id="requestSuccess" class="success-message" style="display: none;">
           ✓ Request added! Total requests: <span id="newRequestCount"></span>
         </div>
+
+        <p class="ez-borrow-note student-only">
+          You can also use <a href="https://ezborrow.reshare.indexdata.com/" target="_blank">EZBorrow</a> or <a
+            href="https://library.nyu.edu/services/borrowing/from-non-nyu-libraries/interlibrary-loan/"
+            target="_blank">InterLibrary Loan (ILL)</a> for materials unavailable at NYU
+        </p>
       </div>
     </div>
 
     <!-- Footer -->
     <div class="footer">
       <div class="footer-logo">🎓 NYU Libraries</div>
+    </div>
+  </div>
+
+  <!-- Floor Plan Modal -->
+  <div id="floorPlanModal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal">&times;</span>
+      <h3>Library Floor Plan</h3>
+      <p id="modalLocation"></p>
+      <div class="floor-plan-image">
+        <img id="floorPlanImg" src="" alt="Library Floor Plan">
+      </div>
     </div>
   </div>
 
