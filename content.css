@@ -292,6 +292,36 @@
   display: block;
 }
 
+.library-link-modal-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.library-link-report-btn {
+  background: transparent;
+  border: 1px solid #e53e3e;
+  color: #e53e3e;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.library-link-report-btn:hover {
+  background: #fff5f5;
+  transform: translateY(-1px);
+}
+
+.library-link-report-btn:active {
+  transform: translateY(0);
+}
+
 .library-link-details .author {
   font-size: 14px;
   font-style: italic;

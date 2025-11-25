@@ -372,6 +372,36 @@ body {
     display: block;
 }
 
+.modal-actions {
+    margin-top: 16px;
+    display: flex;
+    justify-content: center;
+}
+
+.btn-report {
+    background: transparent;
+    border: 1px solid #e53e3e;
+    color: #e53e3e;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-report:hover {
+    background: #fff5f5;
+    transform: translateY(-1px);
+}
+
+.btn-report:active {
+    transform: translateY(0);
+}
+
 .empty-reserves {
     text-align: center;
     padding: 40px 20px;

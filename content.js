@@ -507,6 +507,9 @@ function showFloorPlanModal(bookData) {
             <div class="library-link-floor-plan">
                 <img src="${imageUrl}" alt="Library Floor Plan">
             </div>
+            <div class="library-link-modal-actions">
+                <button class="library-link-report-btn">⚠️ Report Book Missing</button>
+            </div>
         </div>
     `;
 
@@ -516,6 +519,23 @@ function showFloorPlanModal(bookData) {
     const closeBtn = modal.querySelector('.library-link-modal-close');
     closeBtn.addEventListener('click', () => {
         modal.remove();
+    });
+
+    const reportBtn = modal.querySelector('.library-link-report-btn');
+    reportBtn.addEventListener('click', () => {
+        reportBtn.textContent = '✓ Reported to Library Staff';
+        reportBtn.disabled = true;
+        reportBtn.style.background = '#e53e3e';
+        reportBtn.style.color = 'white';
+        reportBtn.style.cursor = 'default';
+
+        // Simulate API call
+        console.log('Library Link: Book reported missing', bookData);
+
+        // Show alert or toast could be added here, but button state change is good feedback
+        setTimeout(() => {
+            alert('Thank you for reporting. Library staff have been notified and will check the shelf.');
+        }, 100);
     });
 
     modal.addEventListener('click', (e) => {

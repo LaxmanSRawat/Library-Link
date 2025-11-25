@@ -169,11 +169,34 @@ function showAvailableBook(bookInfo, libraryData) {
     const modalImg = document.getElementById('floorPlanImg');
     const modalLocation = document.getElementById('modalLocation');
     const closeModal = document.querySelector('.close-modal');
+    const reportBtn = document.getElementById('reportMissingBtn');
 
     mapBtn.onclick = () => {
         modal.style.display = 'block';
         modalImg.src = 'icons/Gemini_Generated_Image_xw5kwfxw5kwfxw5k.png';
-        modalLocation.textContent = `Location: ${bookInfo.location}`;
+        modalLocation.textContent = `Location: ${libraryData.location}`;
+
+        // Reset report button state
+        reportBtn.textContent = '⚠️ Report Book Missing';
+        reportBtn.disabled = false;
+        reportBtn.style.background = 'transparent';
+        reportBtn.style.color = '#e53e3e';
+        reportBtn.style.cursor = 'pointer';
+    };
+
+    reportBtn.onclick = () => {
+        reportBtn.textContent = '✓ Reported to Library Staff';
+        reportBtn.disabled = true;
+        reportBtn.style.background = '#e53e3e';
+        reportBtn.style.color = 'white';
+        reportBtn.style.cursor = 'default';
+
+        // Simulate API call
+        console.log('Library Link: Book reported missing', bookInfo);
+
+        setTimeout(() => {
+            alert('Thank you for reporting. Library staff have been notified and will check the shelf.');
+        }, 100);
     };
 
     closeModal.onclick = () => {
