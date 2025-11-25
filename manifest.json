@@ -1,0 +1,50 @@
+{
+  "manifest_version": 3,
+  "name": "Library Link",
+  "version": "1.0.0",
+  "description": "Find books available in NYU Libraries while browsing Amazon. Save money and support your library!",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "*://www.amazon.com/*",
+    "*://www.amazon.ca/*",
+    "*://www.amazon.co.uk/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://www.amazon.com/*",
+        "*://www.amazon.ca/*",
+        "*://www.amazon.co.uk/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["data/library-books.json"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

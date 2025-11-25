@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Library Link</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+  <div class="container">
+    <!-- Savings Display -->
+    <div class="savings-section" style="position: relative;">
+      <div class="savings-icon">💰</div>
+      <div class="savings-content">
+        <div class="savings-label">Total Savings</div>
+        <div class="savings-amount" id="totalSavings">$0.00</div>
+      </div>
+      <button id="initDefaultRequests" class="init-requests-btn"
+        title="Initialize default pending requests for testing">
+        🔧 Init Requests
+      </button>
+    </div>
+
+    <!-- Book Details Section -->
+    <div id="bookSection" class="book-section">
+      <!-- Loading State -->
+      <div id="loadingState" class="loading-state">
+        <div class="spinner"></div>
+        <p>Checking library availability...</p>
+      </div>
+
+      <!-- No Book State -->
+      <div id="noBookState" class="no-book-state" style="display: none;">
+        <div class="empty-icon">📚</div>
+        <h3>No Book Detected</h3>
+        <p>Visit an Amazon book page to see if it's available in NYU Libraries!</p>
+      </div>
+
+      <!-- Book Available State -->
+      <div id="availableState" class="available-state" style="display: none;">
+        <div class="status-badge available">✓ Available</div>
+
+        <div class="book-info">
+          <h2 id="bookTitle" class="book-title"></h2>
+          <p id="bookAuthor" class="book-author"></p>
+        </div>
+
+        <div class="details-grid">
+          <div class="detail-item">
+            <div class="detail-label">Copies Available</div>
+            <div id="copiesAvailable" class="detail-value"></div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Location</div>
+            <div id="location" class="detail-value"></div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">You'll Save</div>
+            <div id="bookPrice" class="detail-value price"></div>
+          </div>
+        </div>
+
+        <button id="borrowBtn" class="btn btn-primary">
+          <span class="btn-icon">📖</span>
+          Borrow and Pickup
+        </button>
+
+        <div id="borrowSuccess" class="success-message" style="display: none;">
+          ✓ Added to your borrowed books!
+        </div>
+      </div>
+
+      <!-- Book Unavailable State -->
+      <div id="unavailableState" class="unavailable-state" style="display: none;">
+        <div class="status-badge unavailable">Not in Library</div>
+
+        <div class="book-info">
+          <h2 id="unavailableBookTitle" class="book-title"></h2>
+          <p id="unavailableBookAuthor" class="book-author"></p>
+        </div>
+
+        <div class="request-info">
+          <div class="request-count-container">
+            <div class="request-label">Pending Requests</div>
+            <div id="requestCount" class="request-count">0</div>
+          </div>
+          <p class="request-description">
+            Help us prioritize! Request this book and we'll notify the library.
+          </p>
+        </div>
+
+        <button id="requestBtn" class="btn btn-secondary">
+          <span class="btn-icon">➕</span>
+          Add Request
+        </button>
+
+        <div id="requestSuccess" class="success-message" style="display: none;">
+          ✓ Request added! Total requests: <span id="newRequestCount"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-logo">🎓 NYU Libraries</div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+
+</html>

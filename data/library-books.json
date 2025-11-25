@@ -1,0 +1,124 @@
+{
+    "books": [
+        {
+            "isbn": "978-0-13-468599-1",
+            "title": "Introduction to Algorithms",
+            "author": "Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, Clifford Stein",
+            "copiesAvailable": 4,
+            "location": "Engineering Library - 2nd Floor, Section QA76.6",
+            "price": 89.99
+        },
+        {
+            "isbn": "978-0-07-352342-7",
+            "title": "Fundamentals of Electric Circuits",
+            "author": "Charles K. Alexander, Matthew N. O. Sadiku",
+            "copiesAvailable": 3,
+            "location": "Engineering Library - 3rd Floor, Section TK454",
+            "price": 125.00
+        },
+        {
+            "isbn": "978-0-13-449913-0",
+            "title": "Computer Networking: A Top-Down Approach",
+            "author": "James F. Kurose, Keith W. Ross",
+            "copiesAvailable": 5,
+            "location": "Engineering Library - 2nd Floor, Section TK5105.5",
+            "price": 95.50
+        },
+        {
+            "isbn": "978-0-13-467509-1",
+            "title": "Artificial Intelligence: A Modern Approach",
+            "author": "Stuart Russell, Peter Norvig",
+            "copiesAvailable": 2,
+            "location": "Engineering Library - 4th Floor, Section Q335",
+            "price": 110.00
+        },
+        {
+            "isbn": "978-0-07-338065-0",
+            "title": "Thermodynamics: An Engineering Approach",
+            "author": "Yunus A. Çengel, Michael A. Boles",
+            "copiesAvailable": 6,
+            "location": "Engineering Library - 3rd Floor, Section TJ265",
+            "price": 98.75
+        },
+        {
+            "isbn": "978-0-13-476904-0",
+            "title": "Database System Concepts",
+            "author": "Abraham Silberschatz, Henry F. Korth, S. Sudarshan",
+            "copiesAvailable": 3,
+            "location": "Engineering Library - 2nd Floor, Section QA76.9.D3",
+            "price": 105.00
+        },
+        {
+            "isbn": "978-0-13-359162-0",
+            "title": "Digital Design and Computer Architecture",
+            "author": "David Harris, Sarah Harris",
+            "copiesAvailable": 4,
+            "location": "Engineering Library - 3rd Floor, Section TK7888.4",
+            "price": 92.00
+        },
+        {
+            "isbn": "978-0-07-802189-0",
+            "title": "Engineering Mechanics: Dynamics",
+            "author": "J. L. Meriam, L. G. Kraige",
+            "copiesAvailable": 5,
+            "location": "Engineering Library - 1st Floor, Section TA352",
+            "price": 115.50
+        },
+        {
+            "isbn": "978-0-13-449266-7",
+            "title": "Operating System Concepts",
+            "author": "Abraham Silberschatz, Peter B. Galvin, Greg Gagne",
+            "copiesAvailable": 3,
+            "location": "Engineering Library - 2nd Floor, Section QA76.76.O63",
+            "price": 88.00
+        },
+        {
+            "isbn": "978-0-13-394803-8",
+            "title": "Computer Organization and Design",
+            "author": "David A. Patterson, John L. Hennessy",
+            "copiesAvailable": 4,
+            "location": "Engineering Library - 3rd Floor, Section QA76.9.C643",
+            "price": 102.50
+        },
+        {
+            "isbn": "978-0-07-352934-4",
+            "title": "Fluid Mechanics",
+            "author": "Frank M. White",
+            "copiesAvailable": 2,
+            "location": "Engineering Library - 3rd Floor, Section TA357",
+            "price": 118.00
+        },
+        {
+            "isbn": "978-0-13-449157-8",
+            "title": "Software Engineering",
+            "author": "Ian Sommerville",
+            "copiesAvailable": 5,
+            "location": "Engineering Library - 2nd Floor, Section QA76.758",
+            "price": 95.00
+        },
+        {
+            "isbn": "978-0-13-476826-5",
+            "title": "Signals and Systems",
+            "author": "Alan V. Oppenheim, Alan S. Willsky",
+            "copiesAvailable": 3,
+            "location": "Engineering Library - 3rd Floor, Section TK5102.9",
+            "price": 108.50
+        },
+        {
+            "isbn": "978-0-07-339792-4",
+            "title": "Materials Science and Engineering: An Introduction",
+            "author": "William D. Callister Jr., David G. Rethwisch",
+            "copiesAvailable": 4,
+            "location": "Engineering Library - 1st Floor, Section TA403",
+            "price": 125.00
+        },
+        {
+            "isbn": "978-0-13-449508-8",
+            "title": "Machine Learning",
+            "author": "Tom M. Mitchell",
+            "copiesAvailable": 2,
+            "location": "Engineering Library - 4th Floor, Section Q325.5",
+            "price": 97.00
+        }
+    ]
+}
