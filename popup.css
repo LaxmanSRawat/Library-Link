@@ -88,7 +88,7 @@ body {
 }
 
 .student-text {
-    color: #57068c;
+    color: white;
 }
 
 .professor-text {
@@ -100,7 +100,7 @@ body {
 }
 
 .toggle-input:checked~.toggle-label .professor-text {
-    color: #2c5282;
+    color: white;
 }
 
 .toggle-label::before {
